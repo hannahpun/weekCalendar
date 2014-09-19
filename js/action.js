@@ -2,12 +2,15 @@ $(document).ready(function() {
 	//fancy
 
 
-	var start, end;
-	// => false
+	var start, end, eventData;
+	var x, eventDataArr,eventDataObj;
+	
+
+	//fullCalendar setting
 	$('#calendar').fullCalendar({
 		header: {
 			left: '',
-			center: 'title',
+			center: '',
 			right: ''
 		},
 		columnFormat: {
@@ -19,35 +22,40 @@ $(document).ready(function() {
 		allDaySlot: false,
 		firstDay: 1,
 		selectable: true,
-		selectHelper: true,
 		slotDuration: '01:00:00',
 		editable: true,
-		// slotEventOverlap: false,
-		eventLimit: {
-			'agenda': 6, // adjust to 6 only for agendaWeek/agendaDay
-			'default': 1, // give the default value to other views'
-			'week': 1
-		},
 		select: function(start, end) {
-			var	eventData = {
-					id: Math.random().toString(36).substr(2, 9),
-					title: '0',
-					start: start,
-					end: end
-				};
+
+			//save event 
+			eventData = {
+				id: Math.random().toString(36).substr(2, 9),
+				start: start,
+				end: end
+			};
 			$('#calendar').fullCalendar('renderEvent', eventData, true); // stick? = true
 			$('#calendar').fullCalendar('unselect');
 			
-
-			$("#price").val(eventData.title);
+			//dialog show value
 			$("#week_start").val(moment(start).format('YYYY[-]MM[-]DD'));
 			$("#week_end").val(moment(end).format('YYYY[-]MM[-]DD'));
 			$("#time_start").val(moment(start).format('HH:mm:ss'));
 			$("#time_end").val(moment(end).format('HH:mm:ss'));
+
+			//fancybox show
+			$.fancybox( {
+				href : '#dialog',
+				beforeLoad: function(){
+					$("#btn_delete, #btn_update").hide();
+					$("#btn_add, #duraion_lable").show();
+				},
+				afterLoad: function(){
+					$("#title").text("Add")
+				}
+			} );
 			
 		},
 		eventClick: function(event, element) {
-			//for schedule
+			//fancybox
 			$.fancybox( {
 				href : '#dialog',
 				beforeLoad: function(){
@@ -59,27 +67,18 @@ $(document).ready(function() {
 					$("#title").text("Edit")
 				}
 			} );
-			//display
-			var event_title = event.title;
-			var event_start = moment(event.start);
-			var event_end = moment(event.end);
 
-			var event_start_week = event_start.format('YYYY[-]MM[-]DD');
-			var event_end_week = event_end.format('YYYY[-]MM[-]DD');
-			var event_start_time = event_start.format('HH:mm:ss');
-			var event_end_time = event_end.format('HH:mm:ss');
-
-
-			//showDialogVal(event_title, event_start_week, event_end_time, event_start_week, event_end_week)
-			$("#price").val(event_title);
-			$("#time_start").val(event_start_time);
-			$("#time_end").val(event_end_time);
-			$("#week_start").val(event_start_week);
-			$("#week_end").val(event_end_week);
+			//dialog show value
+			$("#price").val(event.title);
+			$("#time_start").val(moment(event.start).format('HH:mm:ss'));
+			$("#time_end").val(moment(event.end).format('HH:mm:ss'));
+			$("#week_start").val(moment(event.start).format('YYYY[-]MM[-]DD'));
+			$("#week_end").val(moment(event.end).format('YYYY[-]MM[-]DD'));
 
 			//delete
 			$('#btn_delete').click(function() {
 				$('#calendar').fullCalendar('removeEvents', [event.id])
+				$.fancybox.close(true);
 				return false;
 			})
 
@@ -88,14 +87,10 @@ $(document).ready(function() {
 				event.title = $("#price").val();
 				event.start = $("#week_start").val() + 'T' + $("#time_start").val();
 				event.end = $("#week_end").val() + 'T' + $("#time_end").val();
-				//console.log(moment($("#week_start").val()).format()+'  ');
 				$('#calendar').fullCalendar('updateEvent', event);
+				$.fancybox.close(true);
 				return false;
 			})
-
-
-			//$('#calendar').fullCalendar('updateEvent', event);
-			//$('#calendar').fullCalendar( 'removeEvents', [ 999 ] )
 		},
 		
 		timeFormat: {
@@ -117,29 +112,30 @@ $(document).ready(function() {
 
 	});
 
-	//dialog show value
-	function showDialogVal(price, week_start, week_end, time_start, time_end){
-		$("#price").val(price);
-		$("#week_start").val(week_start);
-		$("#week_end").val(week_end);
-		$("#time_start").val(time_start);
-		$("#time_end").val(time_end);
-	}
+	
+	//add
+	$('#btn_add').click(function() {
+		addEvent(eventData);
+		return false;
+	})
 
-	$("#dailog_form").submit(function() {
+	function addEvent(eventData){
+		//先刪掉原本的
+		$('#calendar').fullCalendar('removeEvents', eventData.id)
 
-
+		//$.fancybox.close(true);
+		console.log($("#duraion").prop('checked'))
 		if ($("#duraion").prop('checked')) {
-			//for(var i=)
+
 			var oneDay = 60 * 60 * 24 * 1000;
 			var startTime = moment($("#week_start").val() + 'T' + $("#time_start").val());
 			var startEndTime = moment($("#week_start").val() + 'T' + $("#time_end").val());
 			var endTime = moment($("#week_end").val() + 'T' + $("#time_end").val());
 
-			var x = 0,
-				eventData = [],
-				eventDataObj;
-			//console.log(startTime + '  '+ oneDay);
+			x = 0,
+			eventDataArr = [],
+			eventDataObj = {};
+
 			for (var i = startTime; i <= endTime; i += oneDay) {
 				eventDataObj = {
 					id: Math.random().toString(36).substr(2, 9),
@@ -149,27 +145,27 @@ $(document).ready(function() {
 				}
 
 				x++;
-				eventData.push(eventDataObj)
+				eventDataArr.push(eventDataObj)
 
 			}
+			//save event
+			$('#calendar').fullCalendar('addEventSource', eventDataArr);
 
-			$('#calendar').fullCalendar('addEventSource', eventData);
 		} else {
-			eventData = [{
-				title: $("#price").val(),
-				start: $("#week_start").val() + 'T' + $("#time_start").val(),
-				end: $("#week_end").val() + 'T' + $("#time_end").val()
-			}];
-			// $('#calendar').fullCalendar('addEventSource', eventData);
+			
+			//change event
+			eventData.id = Math.random().toString(36).substr(2, 9);
+			eventData.title = $("#price").val();
+			eventData.start = $("#week_start").val() + 'T' + $("#time_start").val();
+			eventData.end = $("#week_end").val() + 'T' + $("#time_end").val();
+			
+			//save event
 			$('#calendar').fullCalendar('renderEvent', eventData, true);
 
-
-
 		}
-		return false;
-	})
+	}
 
-
+	//initial
 	var view = $('#calendar').fullCalendar('getView');
 
 	var option_week_start, option_time_start = "",
@@ -185,4 +181,7 @@ $(document).ready(function() {
 
 	$("#week_start, #week_end").append(option_week_start);
 	$("#time_start, #time_end").append(option_time_start);
+	
+	
+
 });
